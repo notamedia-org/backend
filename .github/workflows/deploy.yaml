@@ -1,0 +1,98 @@
+name: DEPLOY GO CRON SERVICE
+
+on:
+  push:
+    branches: ["dev", "master"]
+  pull_request:
+    branches: ["dev", "master"]
+  workflow_dispatch:
+    inputs:
+      env:
+        description: provide certain .env content
+        required: true
+
+permissions: write-all
+
+jobs:
+  checkout:
+    runs-on: self-hosted
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+  dependencies:
+    runs-on: self-hosted
+    needs: checkout
+    env:
+      ENV_FILE: ${{ github.event.inputs.env }}
+    steps:
+      - name: check if there is alive workdir
+        run: |
+          if [ -d ~/cron-service1 ]; then
+            mv ~/cron-service1/.env ~/.env
+            rm -r ~/cron-service1
+          else
+            echo "fine"
+          fi
+      - name: check if docker installed
+        id: check_docker
+        run: |
+          if ! command -v docker &> /dev/null
+          then
+            sudo apt update
+            sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+            sudo apt install -y docker-ce
+            sudo systemctl restart docker.service
+          fi
+      - name: move repo ( checkout doesnt provide clone/pull to custom directory )
+        run: cp -r -f ../cron-service ~/cron-service1 
+      - name: process env
+        run: |
+         if [[ ! -z "$ENV_FILE" ]];
+           then
+             echo "$ENV_FILE" | tr ' ' '\n' > .env
+             cp -f ../cron-service/.env ~/cron-service1/.env
+           else
+             mv ~/.env ~/cron-service1/.env
+          fi
+
+
+  prepare-enviroment:
+    runs-on: self-hosted
+    needs: dependencies
+    defaults:
+      run:
+        working-directory: ../../../../cron-service1
+    steps:
+       - name: down existing containers
+         run: cat .env & docker compose down
+       - name: prune all the volumes
+         run: docker volume ls -qf dangling=true | xargs -r docker volume rm
+       - name: prune docker sys
+         run: docker system prune -a -f
+
+  ssl-certs:
+    runs-on: self-hosted
+    needs: prepare-enviroment
+    defaults:
+      run:
+        working-directory: ../../../../cron-service1
+    steps:
+      - name: check ssl
+        run: |
+           if grep -q letsencrypt "`ls ~/../etc`"; then
+            sudo apt-get install -y certbot
+            sudo certbot certonly --standalone  --non-interactive -m ${{ secrets.email }} -d ${{secrets.domain }}
+           fi
+
+  deploy:
+    runs-on: self-hosted
+    needs: ssl-certs
+    defaults:
+      run:
+        working-directory: ../../../../cron-service1
+    steps:
+      - name: up the container
+        run: docker compose up --build -d

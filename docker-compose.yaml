@@ -1,0 +1,14 @@
+version: '3.5'
+
+services:
+  beats:
+    build:
+      context: .
+      dockerfile: Dockerfile
+  ports:
+    - 8887:8887
+  healthcheck:
+    test: wget --spider http://localhost:3779/health/readiness
+    interval: 10s
+    timeout: 10s
+    retries: 10

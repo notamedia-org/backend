@@ -1,0 +1,25 @@
+linters:
+  enable-all: true
+  disable:
+    # deprecated, replaced by exhaustruct
+    - exhaustivestruct
+    # not used because of vendored dependencies
+    - depguard
+
+linters-settings:
+  varnamelen:
+    ignore-decls:
+      - w http.ResponseWriter
+      - r *http.Request
+      - ok bool
+      - i int
+
+  exhaustruct:
+    # List of regular expressions to match struct packages and names.
+    # If this list is empty, all structs are tested.
+    # Default: []
+    include: []
+    # List of regular expressions to exclude struct packages and names from check.
+    # Default: []
+    exclude:
+      - 'http\.Server$'
