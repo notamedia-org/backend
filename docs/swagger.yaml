@@ -1,42 +1,4 @@
-definitions:
-  user.User:
-    properties:
-      firstName:
-        type: string
-      id:
-        type: string
-      lastName:
-        type: string
-    type: object
 info:
   contact: {}
-paths:
-  /api/v1/user/register:
-    post:
-      consumes:
-      - application/json
-      description: Create a new user
-      parameters:
-      - description: User
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/user.User'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/user.User'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Create user
-      tags:
-      - user
+paths: {}
 swagger: "2.0"
