@@ -20,7 +20,7 @@ import (
 // @Success 200 {object} user.User
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/user/register [post]
-func Login(db *pg.DB, env *config.Config) http.HandlerFunc {
+func Auth(db *pg.DB, env *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		tokenString := req.Header.Get("Authorization")
 		if status, err := tokenHandler.VerifyToken(env, tokenString); status != true || err != nil {
